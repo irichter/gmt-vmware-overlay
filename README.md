@@ -31,5 +31,5 @@ To add this overlay to a Gentoo system, install layman
 and run the following command as root:
 
 ```bash
-layman -o https://raw.github.com/gmt/gmt-vmware-overlay/master/overlay.xml -f -a gmt-vmware
+layman -o https://raw.github.com/gmt/gmt-vmware-overlay/master/overlay.xml -a gmt-vmware
 ```
