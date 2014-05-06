@@ -2,6 +2,10 @@
 # Copyright 1999-2014 Gentoo Foundation; Distributed under the GPL v2
 # $Header: $
 
+  06 May 2014; Gregory M. Turner <gmt@be-evil.net>
+  vmware-modules-279.2-r1.ebuild:
+  Update udev entries with correct quoting as required by recent udevd.
+
   16 Jan 2014; Greg Turner <gmt@be-evil.net>
   +vmware-modules-279.1-r1.ebuild, +files/279-3.11.0.patch,
   +files/279-3.12.0.patch, +files/279-vnet-gcc48.patch:
