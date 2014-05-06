@@ -28,6 +28,9 @@ DEPEND="${RDEPEND}
 
 S=${WORKDIR}
 
+# no debug-symbol magic (should really be a linux-mod feature)
+RESTRICT="strip splitdebug"
+
 # override setup_allowed_flags from flag-o-matic
 # to ultra-conservative set.  Interim solution until
 # something can be done for this in linux-mod.eclass.
