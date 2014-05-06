@@ -4,6 +4,10 @@
 
   06 May 2014; Gregory M. Turner <gmt@be-evil.net>
   vmware-modules-279.2-r1.ebuild:
+  Verbose building
+
+  06 May 2014; Gregory M. Turner <gmt@be-evil.net>
+  vmware-modules-279.2-r1.ebuild:
   Implement ultra-nazi flag stripping to protect users from themselves
   (even though it really seems linux-mod.eclass should be doing it for us).
 
