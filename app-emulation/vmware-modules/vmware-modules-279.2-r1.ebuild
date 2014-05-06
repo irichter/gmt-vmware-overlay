@@ -26,6 +26,23 @@ DEPEND="${RDEPEND}
 
 S=${WORKDIR}
 
+# override setup_allowed_flags from flag-o-matic
+# to ultra-conservative set.  Interim solution until
+# something can be done for this in linux-mod.eclass.
+# Note that the kernel has it's own flags that should
+# be applied automagically.
+#
+# How is this still not handled correctly in Gentoo?
+# Am I missing something, or is this an insane,
+# crazy bug?
+setup_allowed_flags() {
+	ALLOWED_FLAGS="-pipe"
+	ALLOWED_FLAGS+=" -O -O1 -O2 -Os -mtune"
+	ALLOWED_FLAGS+=" -W* -w"
+	export ALLOWED_FLAGS
+	return 0
+}
+
 pkg_setup() {
 	CONFIG_CHECK="~HIGH_RES_TIMERS"
 	if kernel_is ge 2 6 37 && kernel_is lt 2 6 39; then
@@ -58,7 +75,7 @@ pkg_setup() {
 	BUILD_TARGETS="auto-build KERNEL_DIR=${KERNEL_DIR} KBUILD_OUTPUT=${KV_OUT_DIR}"
 
 	enewgroup "${VMWARE_GROUP}"
-	filter-flags -mfpmath=sse
+	strip-flags
 
 	for mod in ${VMWARE_MODULE_LIST}; do
 		MODULE_NAMES="${MODULE_NAMES} ${mod}(misc:${S}/${mod}-only)"
