@@ -40,7 +40,7 @@ RESTRICT="strip splitdebug"
 # crazy bug?
 setup_allowed_flags() {
 	ALLOWED_FLAGS="-pipe"
-	ALLOWED_FLAGS+=" -O -O1 -O2 -Os -mtune"
+	ALLOWED_FLAGS+=" -O -O1 -O2 -Os -mtune*"
 	ALLOWED_FLAGS+=" -W* -w"
 	export ALLOWED_FLAGS
 	return 0
