@@ -98,6 +98,7 @@ src_prepare() {
 	epatch "${FILESDIR}/${PV_MAJOR}-netdevice.patch"
 	use pax_kernel && epatch "${FILESDIR}/279-hardened.patch"
 	epatch "${FILESDIR}/${PV_MAJOR}-apic.patch"
+	epatch "${FILESDIR}/${PV_MAJOR}-inline-correctly.patch"
 	kernel_is ge 3 7 0 && epatch "${FILESDIR}/${PV_MAJOR}-putname.patch"
 	kernel_is ge 3 10 0 && epatch "${FILESDIR}/${PV_MAJOR}-vmblock.patch"
 	kernel_is ge 3 11 0 && epatch "${FILESDIR}/${PV_MAJOR}-3.11.0.patch"
