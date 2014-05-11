@@ -4,8 +4,6 @@
 
 EAPI=5
 
-BUILD_PARAMS="V=1"
-
 inherit eutils flag-o-matic linux-info linux-mod user versionator udev
 
 PV_MAJOR=$(get_major_version)
