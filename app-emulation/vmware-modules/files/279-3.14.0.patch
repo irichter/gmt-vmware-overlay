@@ -132,3 +132,30 @@ diff -urpN work.orig/vsock-only/shared/compat_cred.h work/vsock-only/shared/comp
  
  #if !defined(cap_set_full)
  /* cap_set_full was removed in kernel version 3.0-rc4. */
+diff -urpN work.orig/vmblock-only/linux/control.c work/vmblock-only/linux/control.c
+--- work.orig/vmblock-only/linux/control.c	2014-05-11 00:34:14.807305118 -0700
++++ work/vmblock-only/linux/control.c	2014-05-11 00:44:20.970502062 -0700
+@@ -279,11 +279,23 @@ ExecuteBlockOp(const char __user *buf,
+    int i;
+    int retval;
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0)
+    name = (char*) getname(buf)->name;
++#else
++   name = __getname();
++#endif
+    if (IS_ERR(name)) {
+       return PTR_ERR(name);
+    }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
++   i = strncpy_from_user(name, buf, PATH_MAX);
++   if (i < 0 || i == PATH_MAX) {
++      __putname(name);
++      return -EINVAL;
++   }
++#endif
++
+    for (i = strlen(name) - 1; i >= 0 && name[i] == '/'; i--) {
+       name[i] = '\0';
+    }
