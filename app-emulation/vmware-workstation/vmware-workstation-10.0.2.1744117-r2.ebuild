@@ -46,7 +46,10 @@ RDEPEND="dev-cpp/cairomm
 	=dev-libs/openssl-0.9.8*
 	dev-libs/xmlrpc-c
 	gnome-base/libgnomecanvas
-	gnome-base/libgtop:2
+	|| (
+		gnome-base/libgtop-compat:2.7
+		( <gnome-base/libgtop-2.30.0:2 >=gnome-base/libgtop-2.28.5:2 )
+	)
 	gnome-base/librsvg:2
 	gnome-base/orbit
 	media-libs/fontconfig
