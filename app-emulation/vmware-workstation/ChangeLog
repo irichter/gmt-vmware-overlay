@@ -2,6 +2,23 @@
 # Copyright 1999-2014 Gentoo Foundation; Distributed under the GPL v2
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/vmware-workstation/ChangeLog,v 1.255 2014/03/01 22:09:35 mgorny Exp $
 
+*vmware-workstation-10.0.3.1895310 (02 Jul 2014)
+
+  02 Jul 2014; Gregory M. Turner <gmt@be-evil.net>
+  vmware-workstation-10.0.2.1744117-r2.ebuild,
+  +vmware-workstation-10.0.3.1895310.ebuild,
+  +files/systemd-vmware-gentoo-01/README.md,
+  +files/systemd-vmware-gentoo-01/vmware.target,
+  +files/systemd-vmware-gentoo-01/vmware-authentication.service,
+  +files/systemd-vmware-gentoo-01/vmware-usb.service,
+  +files/systemd-vmware-gentoo-01/vmware-vmblock.service,
+  +files/systemd-vmware-gentoo-01/vmware-vmci.service,
+  +files/systemd-vmware-gentoo-01/vmware-vmmon.service,
+  +files/systemd-vmware-gentoo-01/vmware-vmnet.service,
+  +files/systemd-vmware-gentoo-01/vmware-vmsock.service:
+  Update to 10.0.3.1895310, activate fetch-restrict, various minor ebuild
+  improvements.
+
   01 Mar 2014; Michał Górny <mgorny@gentoo.org>
   vmware-workstation-10.0.1.1379776-r1.ebuild:
   Update libgcrypt dep to use slot :0.

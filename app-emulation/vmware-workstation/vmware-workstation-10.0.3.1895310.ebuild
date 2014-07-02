@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/vmware-workstation/vmware-workstation-10.0.2.1744117.ebuild,v 1.1 2014/04/19 10:13:35 dilfridge Exp $
+# $Header: $
 
 EAPI="4"
 
@@ -10,22 +10,27 @@ MY_PN="VMware-Workstation"
 MY_PV=$(get_version_component_range 1-3)
 PV_MINOR=$(get_version_component_range 3)
 PV_BUILD=$(get_version_component_range 4)
-MY_P="${MY_PN}-${MY_PV}-${PV_BUILD}"
+MY_P="${MY_PN}-Full-${MY_PV}-${PV_BUILD}"
 
 SYSTEMD_UNITS_TAG="gentoo-01"
 
 DESCRIPTION="Emulate a complete PC on your PC without the usual performance overhead of most emulators"
 HOMEPAGE="http://www.vmware.com/products/workstation/"
-BASE_URI="https://softwareupdate.vmware.com/cds/vmw-desktop/ws/${MY_PV}/${PV_BUILD}/linux/core/"
+# BASE_URI="https://softwareupdate.vmware.com/cds/vmw-desktop/ws/${MY_PV}/${PV_BUILD}/linux/core/"
+BASE_URI="" # not available for open download as of this writing.
+BUNDLE_FILENAME_32="${MY_P}.i386.bundle"
+BUNDLE_FILENAME_64="${MY_P}.x86_64.bundle"
 SRC_URI="
-	x86? ( ${BASE_URI}${MY_P}.i386.bundle.tar )
-	amd64? ( ${BASE_URI}${MY_P}.x86_64.bundle.tar )
+	x86? ( ${BASE_URI}${BUNDLE_FILENAME_32} )
+	amd64? ( ${BASE_URI}${BUNDLE_FILENAME_64} )
 	"
+
 LICENSE="vmware GPL-2"
 SLOT="0"
 KEYWORDS="-* ~amd64 ~x86"
 IUSE="cups doc ovftool server vix vmware-tools"
-RESTRICT="mirror strip splitdebug"
+RESTRICT="mirror strip splitdebug fetch"
+QA_PREBUILT="*"
 
 # vmware-workstation should not use virtual/libc as this is a
 # precompiled binary package thats linked to glibc.
@@ -95,11 +100,31 @@ VM_INSTALL_DIR="/opt/vmware"
 VM_DATA_STORE_DIR="/var/lib/vmware/Shared VMs"
 VM_HOSTD_USER="root"
 
+bundle_setup() {
+	use amd64 && bundle="${DISTDIR}"/${BUNDLE_FILENAME_64}
+	use x86 && bundle="${DISTDIR}"/${BUNDLE_FILENAME_32}
+}
+
+pkg_nofetch() {
+	bundle_setup
+	einfo
+	einfo "Prithee acquire the file"
+	einfo
+	einfo "  \"${bundle#${DISTDIR}/}\","
+	einfo
+	einfo "and place it unto \"${DISTDIR}\"."
+	einfo
+	einfo "Seek it from the official ${MY_PN/-/ } page of downloading,"
+	einfo "Which may still be hither:"
+	einfo
+	einfo "  \"https://my.vmware.com/web/vmware/details?downloadGroup=WKST-1003-LX&productId=362\","
+	einfo
+	einfo "'r haply they chang'd it.  Godspeed!"
+	einfo
+}
+
 src_unpack() {
-	default
-	local bundle
-	use amd64 && bundle=${MY_P}.x86_64.bundle
-	use x86 && bundle=${MY_P}.i386.bundle
+	bundle_setup
 	local component; for component in \
 		vmware-vmx \
 		vmware-player-app \
