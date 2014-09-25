@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI="4"
+EAPI="5"
 
 inherit eutils versionator fdo-mime systemd gnome2-utils pam vmware-bundle
 
@@ -27,8 +27,8 @@ SRC_URI="
 
 LICENSE="vmware GPL-2"
 SLOT="0"
-KEYWORDS="amd64 x86"
-IUSE="cups doc ovftool server vix vmware-tools"
+KEYWORDS="-* ~amd64 ~x86"
+IUSE="cups doc ovftool server vix vmware-tools alsa pulseaudio"
 RESTRICT="mirror strip splitdebug fetch"
 QA_PREBUILT="*"
 
@@ -91,9 +91,14 @@ RDEPEND="dev-cpp/cairomm
 	x11-libs/pangox-compat
 	x11-libs/startup-notification
 	x11-themes/hicolor-icon-theme
+	alsa? ( media-libs/vmware-10-alsa-lib )
+	pulseaudio? ( media-sound/pulseaudio )
 	!app-emulation/vmware-player"
 PDEPEND="~app-emulation/vmware-modules-279.${PV_MINOR}
 	vmware-tools? ( app-emulation/vmware-tools )"
+
+REQUIRED_USE="alsa? ( !pulseaudio )
+	pulseaudio? ( !alsa )"
 
 S=${WORKDIR}
 VM_INSTALL_DIR="/opt/vmware"
@@ -164,6 +169,8 @@ src_prepare() {
 	find "${S}" -name '*.a' -delete
 
 #	clean_bundled_libs
+
+	# use alsa && epatch "${FILESDIR}"/${PN}-10.0.3-force_libasound_override.patch
 }
 
 clean_bundled_libs() {
@@ -315,8 +322,35 @@ src_install() {
 			vmware-{acetool,enter-serial,gksu,fuseUI,modconfig{,-console},netcfg,tray,unity-helper,zenity} ; do
 		dosym appLoader "${VM_INSTALL_DIR}"/lib/vmware/bin/"${tool}"
 	done
-	dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmplayer "${VM_INSTALL_DIR}"/bin/vmplayer
-	dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware "${VM_INSTALL_DIR}"/bin/vmware
+
+	if use alsa; then
+		# for now we replace these two with wrapper hacks due to vmware-10.0.3's incompatibility
+		# with libasound >= 1.0.28 :(  Blech.... can anyone figure out a better way?
+		for f in vm{player,ware} ; do
+			cat > "${D}${VM_INSTALL_DIR}/bin/${f}" <<-EOF
+				#/bin/bash
+				LD_PRELOAD="\${LD_PRELOAD#/opt/vmware-libasound/libasound.so.2.0.0}"
+				LD_PRELOAD="\${LD_PRELOAD#:}"
+				LD_PRELOAD="/opt/vmware-libasound/libasound.so.2.0.0\${LD_PRELOAD:+:}\${LD_PRELOAD}"
+				export LD_PRELOAD
+				${VM_INSTALL_DIR}/lib/vmware/bin/${f} "\$@"
+			EOF
+			chmod a+x "${D}${VM_INSTALL_DIR}/bin/${f}" || die
+		done
+	elif use pulseaudio; then
+		# another hack for pulse (really another way of sidestepping the libasound crash)
+		for f in vm{player,ware} ; do
+			cat > "${D}${VM_INSTALL_DIR}/bin/${f}" <<-EOF
+				#/bin/bash
+				$(type -P /usr/bin/padsp) ${VM_INSTALL_DIR}/lib/vmware/bin/${f} "\$@"
+			EOF
+			chmod a+x "${D}${VM_INSTALL_DIR}/bin/${f}" || die
+		done
+	else
+		dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmplayer "${VM_INSTALL_DIR}"/bin/vmplayer
+		dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware "${VM_INSTALL_DIR}"/bin/vmware
+	fi
+
 	dosym "${VM_INSTALL_DIR}"/lib/vmware/icu /etc/vmware/icu
 
 	# fix permissions

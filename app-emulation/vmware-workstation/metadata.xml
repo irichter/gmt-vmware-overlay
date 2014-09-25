@@ -14,5 +14,17 @@
 		files within guest operating systems.
 		</flag>
 		<flag name="vmware-tools">Install VMware Tools images</flag>
+		<flag name="alsa">
+			Install aggressive and inelegant LD_PRELOAD wrapper hack in /opt/vmware/bin/vm{ware,player}
+			for libasound.so.2.0.0 and add vmware-10-alsa-lib dependency (temporary workaround for problems
+			with >=media-libs/alsa-lib-1.0.28 segfaulting).
+		</flag>
+		<flag name="pulseaudio">
+			Install wrapper into /opt/vmware/bin/vm{ware,player} which runs vmware under the auspicies of
+			the /usr/bin/padsp wrapper as a temporary workaround for problems with
+			>=media-libs/alsa-lib-1.0.28 segfaulting).  This has not been carefully tested, actual results
+			of using vmware's alsa support in this configuration are unknown as of September 2014.
+		</flag>
 	</use>
 </pkgmetadata>
+

@@ -2,6 +2,18 @@
 # Copyright 1999-2014 Gentoo Foundation; Distributed under the GPL v2
 # $Header: /var/cvsroot/gentoo-x86/app-emulation/vmware-workstation/ChangeLog,v 1.255 2014/03/01 22:09:35 mgorny Exp $
 
+*vmware-workstation-10.0.3.1895310-r1 (25 Sep 2014)
+
+  25 Sep 2014; Gregory M. Turner <gmt@be-evil.net>
+  +vmware-workstation-10.0.3.1895310-r1.ebuild:
+  vmware-workstation-10.0.3.1895310.ebuild, metadata.xml:
+  Add awful hacks to work around segfault-on-load troubles with
+  libasound.so.2.0.0 (for >=media-libs/alsa-lib-1.0.28).
+  Update metadata to reflect new -r1 useflags and stabilize old 10.0.3
+  ebuild, since no problems reported and (for now) this correctly splits
+  users between appropriate {~,}{x86,amd64} versions, assuming there's no
+  keywording.
+
 *vmware-workstation-10.0.3.1895310 (02 Jul 2014)
 
   02 Jul 2014; Gregory M. Turner <gmt@be-evil.net>
