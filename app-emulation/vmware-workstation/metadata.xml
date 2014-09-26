@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-	<herd>vmware</herd>
 	<longdescription>
 		VMWare Workstation is a virtual machine which can be used to install 
 		other operating systems in a virtual environment to run on top of Gentoo.
+
+		This fork of the upstream ebuild comes from the gmt-vmware-overlay, where
+		gmt manages to barely maintain it a little every few months or so, when something
+		breaks (vs. upstream's ebuild, which is more-or-less maintainerless, although,
+		technically, if he's not mistaken, there is an active vmware herd (not complaining
+		though. At least, not about the herd -- Workstation, these days, has seemingly
+		evolved into a kind of cautionary tale of how to accidentally create a nearly
+		un-packageable suite of commercial software for linux...  But we digress)).
 	</longdescription>
 	<use>
 		<flag name='ovftool'>Install OVF tool.</flag>
