@@ -102,6 +102,18 @@ VM_INSTALL_DIR="/opt/vmware"
 VM_DATA_STORE_DIR="/var/lib/vmware/Shared VMs"
 VM_HOSTD_USER="root"
 
+pkg_setup() {
+	if use pulseaudio; then
+		ewarn
+		ewarn "NB: the pulseaudio hack does not actually seem to work."
+		ewarn "It will prevent your vmware from crashing, but you won't"
+		ewarn "hear a thing and VMWare will nag you about unavailable"
+		ewarn "audio devices.  Try the alsa use flag instead if you want"
+		ewarn "to hear sound from your emulator."
+		ewarn
+	fi
+}
+
 bundle_setup() {
 	use amd64 && bundle="${DISTDIR}"/${BUNDLE_FILENAME_64}
 	use x86 && bundle="${DISTDIR}"/${BUNDLE_FILENAME_32}
