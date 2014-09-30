@@ -233,8 +233,6 @@ src_install() {
 
 		dobin "${FILESDIR}"/configure-hostd.sh
 
-		dobin "${FILESDIR}"/configure-hostd.sh
-
 		# install the libraries
 		insinto "${VM_INSTALL_DIR}"/lib/vmware/lib
 		doins -r lib/*
