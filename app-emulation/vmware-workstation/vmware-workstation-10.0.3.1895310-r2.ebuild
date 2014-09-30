@@ -1,8 +1,8 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/vmware-workstation/vmware-workstation-10.0.2.1744117.ebuild,v 1.1 2014/04/19 10:13:35 dilfridge Exp $
+# $Header: $
 
-EAPI="4"
+EAPI="5"
 
 inherit eutils versionator fdo-mime systemd gnome2-utils pam vmware-bundle
 
@@ -10,22 +10,27 @@ MY_PN="VMware-Workstation"
 MY_PV=$(get_version_component_range 1-3)
 PV_MINOR=$(get_version_component_range 3)
 PV_BUILD=$(get_version_component_range 4)
-MY_P="${MY_PN}-${MY_PV}-${PV_BUILD}"
+MY_P="${MY_PN}-Full-${MY_PV}-${PV_BUILD}"
 
 SYSTEMD_UNITS_TAG="gentoo-01"
 
 DESCRIPTION="Emulate a complete PC on your PC without the usual performance overhead of most emulators"
 HOMEPAGE="http://www.vmware.com/products/workstation/"
-BASE_URI="https://softwareupdate.vmware.com/cds/vmw-desktop/ws/${MY_PV}/${PV_BUILD}/linux/core/"
+# BASE_URI="https://softwareupdate.vmware.com/cds/vmw-desktop/ws/${MY_PV}/${PV_BUILD}/linux/core/"
+BASE_URI="http://download3.vmware.com/software/wkst/file/"
+BUNDLE_FILENAME_32="${MY_P}.i386.bundle"
+BUNDLE_FILENAME_64="${MY_P}.x86_64.bundle"
 SRC_URI="
-	x86? ( ${BASE_URI}${MY_P}.i386.bundle.tar )
-	amd64? ( ${BASE_URI}${MY_P}.x86_64.bundle.tar )
-	"
+	x86? ( ${BASE_URI}${BUNDLE_FILENAME_32} )
+	amd64? ( ${BASE_URI}${BUNDLE_FILENAME_64} )
+"
+
 LICENSE="vmware GPL-2"
 SLOT="0"
 KEYWORDS="-* ~amd64 ~x86"
-IUSE="cups doc ovftool server vix vmware-tools"
+IUSE="cups doc ovftool server vix vmware-tools alsa pulseaudio systemd"
 RESTRICT="mirror strip splitdebug"
+QA_PREBUILT="*"
 
 # vmware-workstation should not use virtual/libc as this is a
 # precompiled binary package thats linked to glibc.
@@ -45,10 +50,7 @@ RDEPEND="dev-cpp/cairomm
 	=dev-libs/openssl-0.9.8*
 	dev-libs/xmlrpc-c
 	gnome-base/libgnomecanvas
-	|| (
-		gnome-base/libgtop-compat:2.7
-		( <gnome-base/libgtop-2.30.0:2 >=gnome-base/libgtop-2.28.5:2 )
-	)
+	gnome-base/libgtop-compat:2.7
 	gnome-base/librsvg:2
 	gnome-base/orbit
 	media-libs/fontconfig
@@ -86,20 +88,39 @@ RDEPEND="dev-cpp/cairomm
 	x11-libs/pangox-compat
 	x11-libs/startup-notification
 	x11-themes/hicolor-icon-theme
+	alsa? ( media-libs/vmware-10-alsa-lib )
+	pulseaudio? ( media-sound/pulseaudio )
 	!app-emulation/vmware-player"
 PDEPEND="~app-emulation/vmware-modules-279.${PV_MINOR}
 	vmware-tools? ( app-emulation/vmware-tools )"
+
+REQUIRED_USE="alsa? ( !pulseaudio )
+	pulseaudio? ( !alsa )"
 
 S=${WORKDIR}
 VM_INSTALL_DIR="/opt/vmware"
 VM_DATA_STORE_DIR="/var/lib/vmware/Shared VMs"
 VM_HOSTD_USER="root"
 
+pkg_setup() {
+	if use pulseaudio; then
+		ewarn
+		ewarn "NB: the pulseaudio hack does not actually seem to work."
+		ewarn "It will prevent your vmware from crashing, but you won't"
+		ewarn "hear a thing and VMWare will nag you about unavailable"
+		ewarn "audio devices.  Try the alsa use flag instead if you want"
+		ewarn "to hear sound from your emulator."
+		ewarn
+	fi
+}
+
+bundle_setup() {
+	use amd64 && bundle="${DISTDIR}"/${BUNDLE_FILENAME_64}
+	use x86 && bundle="${DISTDIR}"/${BUNDLE_FILENAME_32}
+}
+
 src_unpack() {
-	default
-	local bundle
-	use amd64 && bundle=${MY_P}.x86_64.bundle
-	use x86 && bundle=${MY_P}.i386.bundle
+	bundle_setup
 	local component; for component in \
 		vmware-vmx \
 		vmware-player-app \
@@ -139,6 +160,8 @@ src_prepare() {
 	find "${S}" -name '*.a' -delete
 
 #	clean_bundled_libs
+
+	# use alsa && epatch "${FILESDIR}"/${PN}-10.0.3-force_libasound_override.patch
 }
 
 clean_bundled_libs() {
@@ -207,8 +230,6 @@ src_install() {
 		# install binaries
 		into "${VM_INSTALL_DIR}"/lib/vmware
 		dobin bin/*
-
-		dobin "${FILESDIR}"/configure-hostd.sh
 
 		dobin "${FILESDIR}"/configure-hostd.sh
 
@@ -290,8 +311,35 @@ src_install() {
 			vmware-{acetool,enter-serial,gksu,fuseUI,modconfig{,-console},netcfg,tray,unity-helper,zenity} ; do
 		dosym appLoader "${VM_INSTALL_DIR}"/lib/vmware/bin/"${tool}"
 	done
-	dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmplayer "${VM_INSTALL_DIR}"/bin/vmplayer
-	dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware "${VM_INSTALL_DIR}"/bin/vmware
+
+	if use alsa; then
+		# for now we replace these two with wrapper hacks due to vmware-10.0.3's incompatibility
+		# with libasound >= 1.0.28 :(  Blech.... can anyone figure out a better way?
+		for f in vm{player,ware} ; do
+			cat > "${D}${VM_INSTALL_DIR}/bin/${f}" <<-EOF
+				#/bin/bash
+				LD_PRELOAD="\${LD_PRELOAD#/opt/vmware-libasound/libasound.so.2.0.0}"
+				LD_PRELOAD="\${LD_PRELOAD#:}"
+				LD_PRELOAD="/opt/vmware-libasound/libasound.so.2.0.0\${LD_PRELOAD:+:}\${LD_PRELOAD}"
+				export LD_PRELOAD
+				${VM_INSTALL_DIR}/lib/vmware/bin/${f} "\$@"
+			EOF
+			chmod a+x "${D}${VM_INSTALL_DIR}/bin/${f}" || die
+		done
+	elif use pulseaudio; then
+		# another hack for pulse (really another way of sidestepping the libasound crash)
+		for f in vm{player,ware} ; do
+			cat > "${D}${VM_INSTALL_DIR}/bin/${f}" <<-EOF
+				#/bin/bash
+				$(type -P /usr/bin/padsp) ${VM_INSTALL_DIR}/lib/vmware/bin/${f} "\$@"
+			EOF
+			chmod a+x "${D}${VM_INSTALL_DIR}/bin/${f}" || die
+		done
+	else
+		dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmplayer "${VM_INSTALL_DIR}"/bin/vmplayer
+		dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware "${VM_INSTALL_DIR}"/bin/vmware
+	fi
+
 	dosym "${VM_INSTALL_DIR}"/lib/vmware/icu /etc/vmware/icu
 
 	# fix permissions
@@ -462,11 +510,32 @@ src_install() {
 	fi
 
 	# install systemd unit files
-	systemd_dounit "${FILESDIR}/systemd-vmware-${SYSTEMD_UNITS_TAG}/"*.{service,target}
+	if use systemd; then
+		systemd_dounit "${FILESDIR}/systemd-vmware-${SYSTEMD_UNITS_TAG}/"vmware-{usb,vm{block,ci,mon,sock,net}}.service
+		cp "${FILESDIR}"/systemd-vmware-${SYSTEMD_UNITS_TAG}/vmware.target "${T}/vmware.target"
+		if use server; then
+			systemd_dounit "${FILESDIR}/systemd-vmware-${SYSTEMD_UNITS_TAG}/"vmware-{authentication,workstation-server}.service
+		else
+			sed -e "/^Wants=vmware-authentication.service/d" \
+				-e "/^Wants=vmware-workstation-server.service/d" \
+				-i "${T}"/vmware.target
+		fi
+		systemd_dounit "${T}"/vmware.target
+	fi
 }
 
 pkg_config() {
 	"${VM_INSTALL_DIR}"/bin/vmware-networks --postinstall ${PN},old,new
+
+	# on systemd the init script won't do this for us
+	if use server && use systemd; then
+		if [ ! -e /etc/vmware/ssl/rui.key -o ! -e /etc/vmware/ssl/rui.crt ]; then
+			einfo "Generating vmware-authd keys in /etc/vmware/ssl"
+			mkdir -p /etc/vmware/ssl
+			openssl req -x509 -days 365 -newkey rsa:2048 -keyout /etc/vmware/ssl/rui.key -out /etc/vmware/ssl/rui.crt -config /etc/vmware/ssl/hostd.ssl.config
+			chmod -R 600 /etc/vmware/ssl
+		fi
+	fi
 }
 
 pkg_preinst() {
@@ -486,7 +555,11 @@ pkg_postinst() {
 
 pkg_prerm() {
 	einfo "Stopping ${PN} for safe unmerge"
-	/etc/init.d/vmware stop
+	if use systemd; then
+		systemctl stop vmware.target
+	else
+		/etc/init.d/vmware stop
+	fi
 }
 
 pkg_postrm() {

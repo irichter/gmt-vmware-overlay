@@ -1,6 +1,10 @@
 [Unit]
 Description=VMware Authentication Daemon
 After=vmware-vmnet.service
+After=vmware-vmmon.service
+After=vmware-vmci.service
+After=vmware-vmsock.service
+After=vmware-vmblock.service
 PartOf=vmware.target
 
 [Service]
