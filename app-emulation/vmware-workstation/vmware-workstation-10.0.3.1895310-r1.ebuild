@@ -28,7 +28,7 @@ SRC_URI="
 LICENSE="vmware GPL-2"
 SLOT="0"
 KEYWORDS="-* ~amd64 ~x86"
-IUSE="cups doc ovftool server vix vmware-tools alsa pulseaudio"
+IUSE="cups doc ovftool server vix vmware-tools alsa pulseaudio systemd"
 RESTRICT="mirror strip splitdebug"
 QA_PREBUILT="*"
 
@@ -510,11 +510,23 @@ src_install() {
 	fi
 
 	# install systemd unit files
-	systemd_dounit "${FILESDIR}/systemd-vmware-${SYSTEMD_UNITS_TAG}/"*.{service,target}
+	if use systemd; then
+		systemd_dounit "${FILESDIR}/systemd-vmware-${SYSTEMD_UNITS_TAG}/"*.{service,target}
+	fi
 }
 
 pkg_config() {
 	"${VM_INSTALL_DIR}"/bin/vmware-networks --postinstall ${PN},old,new
+
+	# on systemd the init script won't do this for us
+	if use server && use systemd; then
+		if [ ! -e /etc/vmware/ssl/rui.key -o ! -e /etc/vmware/ssl/rui.crt ]; then
+			einfo "Generating vmware-authd keys in /etc/vmware/ssl"
+			mkdir -p /etc/vmware/ssl
+			openssl req -x509 -days 365 -newkey rsa:2048 -keyout /etc/vmware/ssl/rui.key -out /etc/vmware/ssl/rui.crt -config /etc/vmware/ssl/hostd.ssl.config
+			chmod -R 600 /etc/vmware/ssl
+		fi
+	fi
 }
 
 pkg_preinst() {

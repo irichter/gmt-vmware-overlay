@@ -32,6 +32,10 @@
 			>=media-libs/alsa-lib-1.0.28 segfaulting).  This has not been carefully tested, actual results
 			of using vmware's alsa support in this configuration are unknown as of September 2014.
 		</flag>
+		<flag name="systemd">
+			Install systemd unit files and (partially) configure vmware to use them appropriately
+			instead of the relying on the openrc initscripts.
+		</flag>
 	</use>
 </pkgmetadata>
 
