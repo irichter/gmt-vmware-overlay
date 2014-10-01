@@ -28,7 +28,7 @@ SRC_URI="
 LICENSE="vmware GPL-2"
 SLOT="0"
 KEYWORDS="-* ~amd64 ~x86"
-IUSE="cups doc ovftool server vix vmware-tools alsa pulseaudio systemd"
+IUSE="cups doc ovftool server vix vmware-tools systemd alsa"
 RESTRICT="mirror strip splitdebug"
 QA_PREBUILT="*"
 
@@ -88,31 +88,16 @@ RDEPEND="dev-cpp/cairomm
 	x11-libs/pangox-compat
 	x11-libs/startup-notification
 	x11-themes/hicolor-icon-theme
-	alsa? ( media-libs/vmware-10-alsa-lib )
-	pulseaudio? ( media-sound/pulseaudio )
+	alsa? ( >=media-libs/alsa-lib-1.0.28-r1 )
 	!app-emulation/vmware-player"
 PDEPEND="~app-emulation/vmware-modules-279.${PV_MINOR}
-	vmware-tools? ( app-emulation/vmware-tools )"
-
-REQUIRED_USE="alsa? ( !pulseaudio )
-	pulseaudio? ( !alsa )"
+	vmware-tools? ( app-emulation/vmware-tools )
+	!=media-libs/alsa-lib-1.0.28"
 
 S=${WORKDIR}
 VM_INSTALL_DIR="/opt/vmware"
 VM_DATA_STORE_DIR="/var/lib/vmware/Shared VMs"
 VM_HOSTD_USER="root"
-
-pkg_setup() {
-	if use pulseaudio; then
-		ewarn
-		ewarn "NB: the pulseaudio hack does not actually seem to work."
-		ewarn "It will prevent your vmware from crashing, but you won't"
-		ewarn "hear a thing and VMWare will nag you about unavailable"
-		ewarn "audio devices.  Try the alsa use flag instead if you want"
-		ewarn "to hear sound from your emulator."
-		ewarn
-	fi
-}
 
 bundle_setup() {
 	use amd64 && bundle="${DISTDIR}"/${BUNDLE_FILENAME_64}
@@ -158,23 +143,6 @@ src_prepare() {
 	fi
 
 	find "${S}" -name '*.a' -delete
-
-#	clean_bundled_libs
-
-	# use alsa && epatch "${FILESDIR}"/${PN}-10.0.3-force_libasound_override.patch
-}
-
-clean_bundled_libs() {
-	ebegin 'Removing superfluous libraries'
-	cd lib/lib || die
-	ldconfig -p | \
-		sed 's:^\s\+\([^(]*[^( ]\).*=> /.*$:\1:g;t;d' | \
-		fgrep -vx 'libcrypto.so.0.9.8
-libssl.so.0.9.8i
-libgcr.so.0
-libglib-2.0.so.0' |
-		xargs -d'\n' -r rm -rf
-	eend
 }
 
 src_install() {
@@ -312,33 +280,8 @@ src_install() {
 		dosym appLoader "${VM_INSTALL_DIR}"/lib/vmware/bin/"${tool}"
 	done
 
-	if use alsa; then
-		# for now we replace these two with wrapper hacks due to vmware-10.0.3's incompatibility
-		# with libasound >= 1.0.28 :(  Blech.... can anyone figure out a better way?
-		for f in vm{player,ware} ; do
-			cat > "${D}${VM_INSTALL_DIR}/bin/${f}" <<-EOF
-				#/bin/bash
-				LD_PRELOAD="\${LD_PRELOAD#/opt/vmware-libasound/libasound.so.2.0.0}"
-				LD_PRELOAD="\${LD_PRELOAD#:}"
-				LD_PRELOAD="/opt/vmware-libasound/libasound.so.2.0.0\${LD_PRELOAD:+:}\${LD_PRELOAD}"
-				export LD_PRELOAD
-				${VM_INSTALL_DIR}/lib/vmware/bin/${f} "\$@"
-			EOF
-			chmod a+x "${D}${VM_INSTALL_DIR}/bin/${f}" || die
-		done
-	elif use pulseaudio; then
-		# another hack for pulse (really another way of sidestepping the libasound crash)
-		for f in vm{player,ware} ; do
-			cat > "${D}${VM_INSTALL_DIR}/bin/${f}" <<-EOF
-				#/bin/bash
-				$(type -P /usr/bin/padsp) ${VM_INSTALL_DIR}/lib/vmware/bin/${f} "\$@"
-			EOF
-			chmod a+x "${D}${VM_INSTALL_DIR}/bin/${f}" || die
-		done
-	else
-		dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmplayer "${VM_INSTALL_DIR}"/bin/vmplayer
-		dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware "${VM_INSTALL_DIR}"/bin/vmware
-	fi
+	dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmplayer "${VM_INSTALL_DIR}"/bin/vmplayer
+	dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware "${VM_INSTALL_DIR}"/bin/vmware
 
 	dosym "${VM_INSTALL_DIR}"/lib/vmware/icu /etc/vmware/icu
 
@@ -511,15 +454,19 @@ src_install() {
 
 	# install systemd unit files
 	if use systemd; then
-		systemd_dounit "${FILESDIR}/systemd-vmware-${SYSTEMD_UNITS_TAG}/"vmware-{usb,vm{block,ci,mon,sock,net}}.service
-		cp "${FILESDIR}"/systemd-vmware-${SYSTEMD_UNITS_TAG}/vmware.target "${T}/vmware.target"
+		systemd_dounit "${FILESDIR}/systemd-vmware-${SYSTEMD_UNITS_TAG}/"vmware-vm{block,ci,mon,sock,net}.service
+		cp "${FILESDIR}"/systemd-vmware-${SYSTEMD_UNITS_TAG}/vmware-usb.service "${T}"/vmware-usb.service
+		cp "${FILESDIR}"/systemd-vmware-${SYSTEMD_UNITS_TAG}/vmware.target "${T}"/vmware.target
 		if use server; then
 			systemd_dounit "${FILESDIR}/systemd-vmware-${SYSTEMD_UNITS_TAG}/"vmware-{authentication,workstation-server}.service
 		else
 			sed -e "/^Wants=vmware-authentication.service/d" \
 				-e "/^Wants=vmware-workstation-server.service/d" \
 				-i "${T}"/vmware.target
+			sed -e "s/vmware-authentication/vmware-vmnet/" \
+				-i "${T}"/vmware-usb.service
 		fi
+		systemd_dounit "${T}"/vmware-usb.service
 		systemd_dounit "${T}"/vmware.target
 	fi
 }
