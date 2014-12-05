@@ -1,0 +1,22 @@
+commit 2614f3514e7f998c325bff2e7ca82a7f64007ce8
+Author: Gregory M. Tuner <gmt@be-evil.net>
+Date:   Fri Dec 5 04:09:46 2014 -0800
+
+    3.17.x alloc_netdev new argument
+
+diff --git a/vmnet-only/netif.c b/vmnet-only/netif.c
+index e3d1bf2..d34aa9e 100644
+--- a/vmnet-only/netif.c
++++ b/vmnet-only/netif.c
+@@ -149,7 +149,11 @@ VNetNetIf_Create(char *devName,  // IN:
+    memcpy(deviceName, devName, sizeof deviceName);
+    NULL_TERMINATE_STRING(deviceName);
+ 
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 16, 99)
+    dev = alloc_netdev(sizeof *netIf, deviceName, VNetNetIfSetup);
++#else
++   dev = alloc_netdev(sizeof *netIf, deviceName, NET_NAME_UNKNOWN, VNetNetIfSetup);
++#endif
+    if (!dev) {
+       retval = -ENOMEM;
+       goto out;
