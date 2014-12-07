@@ -56,6 +56,7 @@ RDEPEND="dev-cpp/cairomm
 	media-libs/fontconfig
 	media-libs/freetype
 	media-libs/libart_lgpl
+	media-libs/tiff:3
 	=media-libs/libpng-1.2*
 	media-libs/libpng
 	net-misc/curl
@@ -206,7 +207,7 @@ src_install() {
 		doins -r lib/*
 
 		into "${VM_INSTALL_DIR}"
-		for tool in  vmware-{hostd,wssc-adminTool} ; do
+		for tool in  vmware-{hostd,wssc-adminTool,vim-cmd} ; do
 			cat > "${T}/${tool}" <<-EOF
 				#!/usr/bin/env bash
 				set -e
@@ -280,6 +281,13 @@ src_install() {
 		dosym appLoader "${VM_INSTALL_DIR}"/lib/vmware/bin/"${tool}"
 	done
 
+	# God only knows why this is needed or helps.  Gleaned from strace....
+	dosym "../.." "${VM_INSTALL_DIR}"/lib/vmware/lib/libvmacore.so/libdir
+
+	if use server; then
+		dosym vmware-hostd "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware-vim-cmd
+	fi
+
 	dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmplayer "${VM_INSTALL_DIR}"/bin/vmplayer
 	dosym "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware "${VM_INSTALL_DIR}"/bin/vmware
 
@@ -293,6 +301,7 @@ src_install() {
 	fperms 4711 "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware-vmx{,-debug,-stats}
 	if use server; then
 		fperms 0755 "${VM_INSTALL_DIR}"/lib/vmware/bin/vmware-{hostd,wssc-adminTool}
+		fperms 0755 "${VM_INSTALL_DIR}"/bin/vmware-vim-cmd
 		fperms 4711 "${VM_INSTALL_DIR}"/sbin/vmware-authd
 		fperms 1777 "${VM_DATA_STORE_DIR}"
 	fi

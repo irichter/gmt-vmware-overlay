@@ -5,6 +5,7 @@ PartOf=vmware.target
 
 [Service]
 Type=forking
-PidFile=/var/run/vmware/vmware-hostd.PID
+PIDFile=/var/run/vmware/vmware-hostd.PID
 ExecStart=/opt/vmware/bin/vmware-hostd -a -d /etc/vmware/hostd/config.xml
-ExecStop=/opt/vmware/bin/vmware-vim-cmd -U "$(/opt/vmware/bin/vmware-wssc-adminTool "/etc/vmware/hostd/authorization.xml" 2>/dev/null)"
+ExecStop=/opt/vmware/bin/vmware-vim-cmd -U root hostsvc/autostartmanager/autostop
+TimeoutStopSec=240
