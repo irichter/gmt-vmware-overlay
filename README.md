@@ -1,31 +1,28 @@
-gmt-vmware-overlay
-==================
+gmt-vmware-overlay is no longer maintained
+==========================================
 
-vmware-workstation hacks for Gentoo
+I am no longer maintaining this overlay as I have finally
+been able to move away from the workstation platform.
+
+Unfortunately, upstream (gentoo-x86) maintainership of
+vmware remains so spotty that reporting bugs is not an
+effective way to solve problems.
+
+Therefore, the best practice I can advise is to download upstream's
+latest ebuilds, review the commit history of this repository, and merge
+into a fork.  Better yet, get yourself set up as a full Gentoo developer
+and become the maintainer!  I'm sure lots of people would thank you.
+
+Personally, I'm migrating all my in-house systems and as many of my
+clients as possible to non-vmware virtualization platforms and, without
+the incentive of dog-food, I know I'd be a terrible steward of this thing,
+hence this pronouncement of official abandonment.
 
 This overlay contains modified versions of upstream
 Gentoo's ```app-emulation/vmware-*``` ebuilds.  The
 "meat" is in ```app-emulation/vmware-modules``` which
 contains patches to compile vmware-modules against
 recent kernels.
-
-For reasons I struggle to fathom, VMWare only provides
-the glue to compile their modules for crusty, ancient
-linux kernels.  Usually, by the time I discover an
-incompatibility, there is already a patch out there
-somewhere on the internet, or an obvious fix I can
-implement myself.
-
-The ebuild documents and automates what I've been
-able to figure out.  Often what's here will lag
-behind upstream.  Not much I can do about this, as
-I'm only likely to discover a problem once I rsync
-my tree and/or upgrade to a new-enough kernel.  In
-general, I don't run a new kernel version until it's
-had several point revisions, so if you want smooth
-sailing with this overlay, it's probably best to
-implement a similar policy for your own kernel
-upgrading.
 
 To add this overlay to a Gentoo system, install layman
 and run the following command as root:
