@@ -1,0 +1,58 @@
+diff -Naur work.orig/vmblock-only/linux/inode.c work/vmblock-only/linux/inode.c
+--- work.orig/vmblock-only/linux/inode.c	2015-02-12 14:19:42.935909272 +0100
++++ work/vmblock-only/linux/inode.c	2015-02-12 14:28:37.654545189 +0100
+@@ -177,7 +177,11 @@
+       return -EINVAL;
+    }
+ 
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 14, 99)
+    return vfs_readlink(dentry, buffer, buflen, iinfo->name);
++#else
++   return readlink_copy(buffer, buflen, iinfo->name);
++#endif
+ }
+ 
+ 
+diff -Naur work.orig/vsock-only/linux/notify.c work/vsock-only/linux/notify.c
+--- work.orig/vsock-only/linux/notify.c	2015-02-12 14:19:42.937909285 +0100
++++ work/vsock-only/linux/notify.c	2015-02-12 14:28:37.654545189 +0100
+@@ -516,7 +516,11 @@
+    PKT_FIELD(vsk, sentWaitingRead) = FALSE;
+ #endif
+ 
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 14, 99)
+    sk->sk_data_ready(sk, 0);
++#else
++   sk->sk_data_ready(sk);
++#endif
+ }
+ 
+ 
+diff -Naur work.orig/vsock-only/linux/notifyQState.c work/vsock-only/linux/notifyQState.c
+--- work.orig/vsock-only/linux/notifyQState.c	2015-02-12 14:19:42.937909285 +0100
++++ work/vsock-only/linux/notifyQState.c	2015-02-12 14:28:37.654545189 +0100
+@@ -164,7 +164,11 @@
+                      struct sockaddr_vm *dst,    // IN: unused
+                      struct sockaddr_vm *src)    // IN: unused
+ {
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 14, 99)
+    sk->sk_data_ready(sk, 0);
++#else
++   sk->sk_data_ready(sk);
++#endif
+ }
+ 
+ 
+@@ -566,7 +570,12 @@
+       }
+ 
+       /* See the comment in VSockVmciNotifyPktSendPostEnqueue */
++
++#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 14, 99)
+       sk->sk_data_ready(sk, 0);
++#else
++      sk->sk_data_ready(sk);
++#endif
+    }
+ 
+    return err;
