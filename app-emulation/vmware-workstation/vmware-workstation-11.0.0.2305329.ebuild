@@ -439,6 +439,7 @@ src_install() {
 			-e "s:##{USE_SECURESOAP}##:false:g" \
 			-e "s:##{USE_SNMPSVC}##:false:g" \
 			-e "s:##{USE_SOLO_MOCKUP}##:false:g" \
+			-e "s:##{USE_STATSSVC}##:false:g" \
 			-e "s:##{USE_STATSSVC_MOCKUP}##:false:g" \
 			-e "s:##{USE_VCSVC_MOCKUP}##:false:g" \
 			-e "s:##{USE_VDISKSVC}##:false:g" \
