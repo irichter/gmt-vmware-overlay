@@ -7,5 +7,5 @@ PartOf=vmware.target
 [Service]
 Type=simple
 RemainAfterExit=yes
-ExecStart=/sbin/modprobe vsock
-ExecStop=/sbin/modprobe -r vsock
+ExecStart=/sbin/modprobe vsock_vmw
+ExecStop=/sbin/modprobe -r vsock_vmw

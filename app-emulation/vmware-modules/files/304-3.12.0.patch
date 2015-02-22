@@ -1,0 +1,150 @@
+diff -Naur work.orig/vmblock-only/linux/control.c work/vmblock-only/linux/control.c
+--- work.orig/vmblock-only/linux/control.c	2015-02-12 14:10:10.466007735 +0100
++++ work/vmblock-only/linux/control.c	2015-02-12 14:13:54.430536235 +0100
+@@ -282,7 +282,7 @@
+    int i;
+    int retval;
+ 
+-   name = getname(buf);
++   name = (char*) getname(buf)->name;
+    if (IS_ERR(name)) {
+       return PTR_ERR(name);
+    }
+diff -Naur work.orig/vmblock-only/linux/dentry.c work/vmblock-only/linux/dentry.c
+--- work.orig/vmblock-only/linux/dentry.c	2015-02-12 14:10:10.466007735 +0100
++++ work/vmblock-only/linux/dentry.c	2015-02-12 14:13:54.431536242 +0100
+@@ -32,7 +32,7 @@
+ #include "block.h"
+ 
+ 
+-static int DentryOpRevalidate(struct dentry *dentry, struct nameidata *nd);
++static int DentryOpRevalidate(struct dentry *dentry, unsigned int flags);
+ 
+ struct dentry_operations LinkDentryOps = {
+    .d_revalidate = DentryOpRevalidate,
+@@ -60,7 +60,7 @@
+ 
+ static int
+ DentryOpRevalidate(struct dentry *dentry,  // IN: dentry revalidating
+-                   struct nameidata *nd)   // IN: lookup flags & intent
++                   unsigned int flags)     // IN: lookup flags & intent
+ {
+    VMBlockInodeInfo *iinfo;
+    struct nameidata actualNd;
+@@ -101,7 +101,7 @@
+    if (actualDentry &&
+        actualDentry->d_op &&
+        actualDentry->d_op->d_revalidate) {
+-      return actualDentry->d_op->d_revalidate(actualDentry, nd);
++      return actualDentry->d_op->d_revalidate(actualDentry, flags);
+    }
+ 
+    if (compat_path_lookup(iinfo->name, 0, &actualNd)) {
+diff -Naur work.orig/vmblock-only/linux/inode.c work/vmblock-only/linux/inode.c
+--- work.orig/vmblock-only/linux/inode.c	2015-02-12 14:10:10.466007735 +0100
++++ work/vmblock-only/linux/inode.c	2015-02-12 14:13:54.431536242 +0100
+@@ -36,7 +36,7 @@
+ 
+ /* Inode operations */
+ static struct dentry *InodeOpLookup(struct inode *dir,
+-                                    struct dentry *dentry, struct nameidata *nd);
++                                    struct dentry *dentry, unsigned int flags);
+ static int InodeOpReadlink(struct dentry *dentry, char __user *buffer, int buflen);
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 13)
+ static void *InodeOpFollowlink(struct dentry *dentry, struct nameidata *nd);
+@@ -75,7 +75,7 @@
+ static struct dentry *
+ InodeOpLookup(struct inode *dir,      // IN: parent directory's inode
+               struct dentry *dentry,  // IN: dentry to lookup
+-              struct nameidata *nd)   // IN: lookup intent and information
++              unsigned int flags)     // IN: lookup intent and information
+ {
+    char *filename;
+    struct inode *inode;
+@@ -135,7 +135,8 @@
+    inode->i_size = INODE_TO_IINFO(inode)->nameLen;
+    inode->i_version = 1;
+    inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+-   inode->i_uid = inode->i_gid = 0;
++   i_uid_write(inode, 0);
++   i_gid_write(inode, 0);
+    inode->i_op = &LinkInodeOps;
+ 
+    d_add(dentry, inode);
+@@ -221,7 +222,7 @@
+       goto out;
+    }
+ 
+-   ret = vfs_follow_link(nd, iinfo->name);
++   nd_set_link(nd, iinfo->name);
+ 
+ out:
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 13)
+diff -Naur work.orig/vmci-only/linux/driver.c work/vmci-only/linux/driver.c
+--- work.orig/vmci-only/linux/driver.c	2015-02-12 14:10:10.474007790 +0100
++++ work/vmci-only/linux/driver.c	2015-02-12 14:13:54.432536249 +0100
+@@ -51,6 +51,7 @@
+ #include "compat_slab.h"
+ #include "compat_uaccess.h"
+ #include "compat_version.h"
++#include "compat_cred.h"
+ 
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 9)
+ #  error "Linux kernels before 2.6.9 are not supported."
+@@ -735,7 +736,7 @@
+          goto init_release;
+       }
+ 
+-      user = current_uid();
++      user = CURRENT_UID();
+       retval = VMCIContext_InitContext(initBlock.cid, initBlock.flags,
+                                        0 /* Unused */, vmciLinux->userVersion,
+                                        &user, &vmciLinux->context);
+diff -Naur work.orig/vmci-only/shared/compat_cred.h work/vmci-only/shared/compat_cred.h
+--- work.orig/vmci-only/shared/compat_cred.h	2015-02-12 14:10:10.472007776 +0100
++++ work/vmci-only/shared/compat_cred.h	2015-02-12 14:13:54.432536249 +0100
+@@ -35,6 +35,14 @@
+ #define current_fsgid() (current->fsgid)
+ #endif
+ 
++#ifdef CONFIG_UIDGID_STRICT_TYPE_CHECKS
++#define CURRENT_UID() (__kuid_val(current_uid()))
++#define CURRENT_GID() (__kgid_val(current_gid()))
++#else
++#define CURRENT_UID() (current_uid())
++#define CURRENT_GID() (current_gid())
++#endif
++
+ #if !defined(cap_set_full)
+ /* cap_set_full was removed in kernel version 3.0-rc4. */
+ #define cap_set_full(_c) do { (_c) = CAP_FULL_SET; } while (0)
+diff -Naur work.orig/vsock-only/linux/af_vsock.c work/vsock-only/linux/af_vsock.c
+--- work.orig/vsock-only/linux/af_vsock.c	2015-02-12 14:10:10.476007803 +0100
++++ work/vsock-only/linux/af_vsock.c	2015-02-12 14:13:54.434536262 +0100
+@@ -2891,7 +2891,7 @@
+       vsk->connectTimeout = psk->connectTimeout;
+    } else {
+       vsk->trusted = capable(CAP_NET_ADMIN);
+-      vsk->owner = current_uid();
++      vsk->owner = CURRENT_UID();
+       vsk->queuePairSize = VSOCK_DEFAULT_QP_SIZE;
+       vsk->queuePairMinSize = VSOCK_DEFAULT_QP_SIZE_MIN;
+       vsk->queuePairMaxSize = VSOCK_DEFAULT_QP_SIZE_MAX;
+diff -Naur work.orig/vsock-only/shared/compat_cred.h work/vsock-only/shared/compat_cred.h
+--- work.orig/vsock-only/shared/compat_cred.h	2015-02-12 14:10:10.474007790 +0100
++++ work/vsock-only/shared/compat_cred.h	2015-02-12 14:13:54.432536249 +0100
+@@ -35,6 +35,14 @@
+ #define current_fsgid() (current->fsgid)
+ #endif
+ 
++#ifdef CONFIG_UIDGID_STRICT_TYPE_CHECKS
++#define CURRENT_UID() (__kuid_val(current_uid()))
++#define CURRENT_GID() (__kgid_val(current_gid()))
++#else
++#define CURRENT_UID() (current_uid())
++#define CURRENT_GID() (current_gid())
++#endif
++
+ #if !defined(cap_set_full)
+ /* cap_set_full was removed in kernel version 3.0-rc4. */
+ #define cap_set_full(_c) do { (_c) = CAP_FULL_SET; } while (0)
